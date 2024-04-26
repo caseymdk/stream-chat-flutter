@@ -1,6 +1,7 @@
 import 'package:contextmenu/contextmenu.dart';
-import 'package:dart_vlc/dart_vlc.dart';
 import 'package:flutter/material.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:stream_chat_flutter/src/attachment/thumbnail/media_attachment_thumbnail.dart';
 import 'package:stream_chat_flutter/src/context_menu_items/download_menu_item.dart';
@@ -108,8 +109,7 @@ class _FullScreenMediaDesktopState extends State<FullScreenMediaDesktop> {
 
   @override
   Widget build(BuildContext context) {
-    final containsOnlyVideos =
-        widget.mediaAttachmentPackages.length == videoPackages.length;
+    final containsOnlyVideos = widget.mediaAttachmentPackages.length == videoPackages.length;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -124,8 +124,7 @@ class _FullScreenMediaDesktopState extends State<FullScreenMediaDesktop> {
           verticalPadding: 0,
           builder: (_) => [
             DownloadMenuItem(
-              attachment:
-                  widget.mediaAttachmentPackages[_currentPage.value].attachment,
+              attachment: widget.mediaAttachmentPackages[_currentPage.value].attachment,
             ),
           ],
           child: _PlaylistPlayer(
@@ -157,8 +156,7 @@ class _FullScreenMediaDesktopState extends State<FullScreenMediaDesktop> {
     return ValueListenableBuilder<int>(
       valueListenable: _currentPage,
       builder: (context, currentPage, child) {
-        final _currentAttachmentPackage =
-            widget.mediaAttachmentPackages[currentPage];
+        final _currentAttachmentPackage = widget.mediaAttachmentPackages[currentPage];
         final _currentMessage = _currentAttachmentPackage.message;
         final _currentAttachment = _currentAttachmentPackage.attachment;
         return Stack(
@@ -191,8 +189,7 @@ class _FullScreenMediaDesktopState extends State<FullScreenMediaDesktop> {
                         StreamChannel.of(context).channel,
                       );
                     },
-                    attachmentActionsModalBuilder:
-                        widget.attachmentActionsModalBuilder,
+                    attachmentActionsModalBuilder: widget.attachmentActionsModalBuilder,
                   ),
                 );
               },
@@ -206,9 +203,7 @@ class _FullScreenMediaDesktopState extends State<FullScreenMediaDesktop> {
                   return AnimatedPositionedDirectional(
                     duration: kThemeAnimationDuration,
                     curve: Curves.easeInOut,
-                    bottom: isDisplayingDetail
-                        ? 0
-                        : -(bottomPadding + kToolbarHeight),
+                    bottom: isDisplayingDetail ? 0 : -(bottomPadding + kToolbarHeight),
                     start: 0,
                     end: 0,
                     height: bottomPadding + kToolbarHeight,
@@ -274,8 +269,7 @@ class _FullScreenMediaDesktopState extends State<FullScreenMediaDesktop> {
             }
           },
           onRightArrowKeypress: () {
-            if (_currentPage.value <
-                widget.mediaAttachmentPackages.length - 1) {
+            if (_currentPage.value < widget.mediaAttachmentPackages.length - 1) {
               _currentPage.value++;
               _pageController.nextPage(
                 duration: const Duration(milliseconds: 300),
@@ -289,22 +283,19 @@ class _FullScreenMediaDesktopState extends State<FullScreenMediaDesktop> {
             onPageChanged: (val) {
               _currentPage.value = val;
               if (videoPackages.isEmpty) return;
-              final currentAttachment =
-                  widget.mediaAttachmentPackages[val].attachment;
+              final currentAttachment = widget.mediaAttachmentPackages[val].attachment;
               for (final p in videoPackages.values) {
                 if (p.attachment != currentAttachment) {
                   p.player.pause();
                 }
               }
-              if (widget.autoplayVideos &&
-                  currentAttachment.type == AttachmentType.video) {
+              if (widget.autoplayVideos && currentAttachment.type == AttachmentType.video) {
                 final package = videoPackages[currentAttachment.id]!;
                 package.player.play();
               }
             },
             itemBuilder: (context, index) {
-              final currentAttachmentPackage =
-                  widget.mediaAttachmentPackages[index];
+              final currentAttachmentPackage = widget.mediaAttachmentPackages[index];
               final attachment = currentAttachmentPackage.attachment;
 
               return ValueListenableBuilder(
@@ -312,13 +303,10 @@ class _FullScreenMediaDesktopState extends State<FullScreenMediaDesktop> {
                 builder: (context, isDisplayingDetail, child) {
                   return AnimatedContainer(
                     duration: kThemeChangeDuration,
-                    color: isDisplayingDetail
-                        ? StreamChannelHeaderTheme.of(context).color
-                        : Colors.black,
+                    color: isDisplayingDetail ? StreamChannelHeaderTheme.of(context).color : Colors.black,
                     child: Builder(
                       builder: (context) {
-                        if (attachment.type == AttachmentType.image ||
-                            attachment.type == AttachmentType.giphy) {
+                        if (attachment.type == AttachmentType.image || attachment.type == AttachmentType.giphy) {
                           return PhotoView.customChild(
                             maxScale: PhotoViewComputedScale.covered,
                             minScale: PhotoViewComputedScale.contained,
@@ -335,22 +323,21 @@ class _FullScreenMediaDesktopState extends State<FullScreenMediaDesktop> {
                           final package = videoPackages[attachment.id]!;
                           package.player.open(
                             Playlist(
-                              medias: [
-                                Media.network(package.attachment.assetUrl),
+                              [
+                                Media(package.attachment.assetUrl ?? ''),
                               ],
                             ),
-                            autoStart: widget.autoplayVideos,
                           );
 
                           final mediaQuery = MediaQuery.of(context);
                           final bottomPadding = mediaQuery.padding.bottom;
 
+                          late final controller = VideoController(package.player);
+
                           return AnimatedPadding(
                             duration: kThemeChangeDuration,
                             padding: EdgeInsets.symmetric(
-                              vertical: isDisplayingDetail
-                                  ? kToolbarHeight + bottomPadding
-                                  : 0,
+                              vertical: isDisplayingDetail ? kToolbarHeight + bottomPadding : 0,
                             ),
                             child: ContextMenuArea(
                               verticalPadding: 0,
@@ -360,7 +347,7 @@ class _FullScreenMediaDesktopState extends State<FullScreenMediaDesktop> {
                                 ),
                               ],
                               child: Video(
-                                player: package.player,
+                                controller: controller,
                               ),
                             ),
                           );
@@ -386,14 +373,7 @@ class DesktopVideoPackage {
   DesktopVideoPackage(
     this.attachment, {
     this.showControls = true,
-  }) : player = Player(
-          id: int.parse(
-            attachment.id.characters
-                .getRange(0, 10)
-                .toString()
-                .replaceAll(RegExp('[^0-9]'), ''),
-          ),
-        );
+  }) : player = Player();
 
   /// The video attachment to play.
   final Attachment attachment;
@@ -417,17 +397,19 @@ class _PlaylistPlayer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final _media = <Media>[];
+    final controller = VideoController(packages.first.player);
+
     for (final package in packages) {
-      _media.add(Media.network(package.attachment.assetUrl));
+      _media.add(Media(package.attachment.assetUrl ?? ''));
     }
     packages.first.player.open(
       Playlist(
-        medias: _media,
+        _media,
       ),
-      autoStart: autoStart,
     );
+
     return Video(
-      player: packages.first.player,
+      controller: controller,
       fit: BoxFit.cover,
     );
   }
